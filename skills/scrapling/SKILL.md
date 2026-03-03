@@ -24,6 +24,36 @@ metadata:
 
 Scrapling is a powerful Python library for scraping JavaScript-rendered pages, bypassing anti-bot measures, and extracting structured data from complex websites like property listings, e-commerce sites, and dynamic content.
 
+## ⚠️ Security Warning
+
+**This skill executes arbitrary Python code and fetches untrusted content from the internet.**
+
+**Required before use:**
+
+- Run in a **sandboxed environment** (never on your daily driver)
+- Configure **URL allowlisting** to prevent SSRF attacks
+- Enable **network policies** to block private IP ranges
+- Review **[SECURITY.md](SECURITY.md)** for complete threat model and hardening guide
+- Understand that scraped content is **untrusted input** (prompt injection risk)
+
+**Minimum safe config:**
+
+```json5
+{
+  agents: {
+    list: [
+      {
+        id: "scraper",
+        sandbox: { mode: "all", scope: "agent" },
+        tools: { deny: ["process", "exec"] },
+      },
+    ],
+  },
+}
+```
+
+See [SECURITY.md](SECURITY.md) for production-grade configurations.
+
 ## When to Use This Skill
 
 - Property listing websites (real estate, rentals)
