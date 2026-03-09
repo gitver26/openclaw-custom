@@ -65,8 +65,8 @@ RUN NODE_OPTIONS=--max-old-space-size=2048 pnpm install --frozen-lockfile
 # A2UI bundle may fail under QEMU cross-arch; stub it so build still succeeds.
 RUN pnpm canvas:a2ui:bundle 2>/dev/null || \
     (mkdir -p src/canvas-host/a2ui && \
-     echo "/* stub */" > src/canvas-host/a2ui/a2ui.bundle.js && \
-     echo "stub" > src/canvas-host/a2ui/.bundle.hash)
+    echo "/* stub */" > src/canvas-host/a2ui/a2ui.bundle.js && \
+    echo "stub" > src/canvas-host/a2ui/.bundle.hash)
 
 RUN pnpm build
 
@@ -78,14 +78,14 @@ ENV VIRTUAL_ENV="/home/user100/.venv"
 
 RUN pip install --upgrade pip && \
     pip install \
-        mem0ai \
-        "scrapling[fetchers]"
+    mem0ai \
+    "scrapling[fetchers]"
 
 # Download Scrapling browser binaries as user100.
 # System deps were installed as root above; this only downloads browser binaries.
 RUN scrapling install --no-deps 2>/dev/null || \
     (python3 -m playwright install chromium && \
-     python3 -m patchright install chromium)
+    python3 -m patchright install chromium)
 
 # ── Runtime configuration ─────────────────────────────────────────────────────
 WORKDIR /home/user100
@@ -103,4 +103,4 @@ EXPOSE 18789
 
 # Start the openclaw gateway bound to all interfaces so the host can reach it.
 CMD ["bun", "/home/user100/openclaw-custom/openclaw.mjs", \
-     "gateway", "run", "--bind", "all", "--port", "18789"]
+    "gateway", "run", "--bind", "lan", "--port", "18789"]
