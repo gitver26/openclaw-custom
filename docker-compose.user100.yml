@@ -29,6 +29,10 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       # ── mem0 managed platform (empty = self-hosted) ────────────────────────
       - MEM0_API_KEY=${MEM0_API_KEY:-}
+      # ── Brave Search ───────────────────────────────────────────────────────
+      - BRAVE_API_KEY=${BRAVE_API_KEY}
+      # ── Timezone ───────────────────────────────────────────────────────────
+      - TZ=Asia/Singapore
       # ── Gateway ────────────────────────────────────────────────────────────
       - OPENCLAW_GATEWAY_MODE=local
     restart: unless-stopped
