@@ -6,7 +6,7 @@
 #   docker build -f Dockerfile.user100 -t openclaw-user100 .
 #
 # Run:
-#   docker run --env-file .env.user100 -p 18789:18789 openclaw-user100
+#   docker run --env-file .env.user100 -p 49557:49557 openclaw-user100
 #
 # Or use docker-compose:
 #   docker compose -f docker-compose.user100.yml up
@@ -102,11 +102,11 @@ ENV OPENCLAW_GATEWAY_MODE="local"
 # Persist agent state and config across container restarts
 VOLUME ["/home/user100/.openclaw"]
 
-EXPOSE 18789
+EXPOSE 49557
 
 # Seed gateway.mode=local so the gateway starts without interactive setup,
 # then launch. Using shell form so we can chain commands.
 CMD bun /home/user100/openclaw-custom/openclaw.mjs config set gateway.mode local 2>/dev/null; \
     bun /home/user100/openclaw-custom/openclaw.mjs config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true 2>/dev/null; \
     exec bun /home/user100/openclaw-custom/openclaw.mjs \
-      gateway run --bind lan --port 18789 --allow-unconfigured
+      gateway run --bind lan --port 49557 --allow-unconfigured
