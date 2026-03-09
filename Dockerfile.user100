@@ -54,7 +54,7 @@ ENV PATH="/home/user100/.bun/bin:${PATH}"
 ARG OPENCLAW_REPO=https://github.com/gitver26/openclaw-custom.git
 ARG OPENCLAW_REF=main
 
-RUN git clone --depth=1 --branch ${OPENCLAW_REF} ${OPENCLAW_REPO} openclaw-custom
+RUN GIT_TERMINAL_PROMPT=0 git -c credential.helper= clone --depth=1 --branch ${OPENCLAW_REF} ${OPENCLAW_REPO} openclaw-custom
 
 WORKDIR /home/user100/openclaw-custom
 
