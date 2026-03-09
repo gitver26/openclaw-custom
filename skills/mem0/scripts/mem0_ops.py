@@ -52,8 +52,10 @@ def _build_memory():
         raise RuntimeError(
             "Set MEM0_OPENAI_API_KEY (or OPENAI_API_KEY) to use self-hosted mem0"
         )
-    # Temporarily override OPENAI_API_KEY for this process so mem0's internals pick it up.
+    # Override OPENAI_API_KEY and reset base URL so mem0 always hits OpenAI,
+    # not any custom provider endpoint (e.g. Z.AI) set in the container env.
     os.environ["OPENAI_API_KEY"] = openai_key
+    os.environ.pop("OPENAI_BASE_URL", None)
 
     from mem0 import Memory  # type: ignore
     return Memory(), "local"
