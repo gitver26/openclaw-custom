@@ -90,8 +90,11 @@ RUN scrapling install --no-deps 2>/dev/null || \
 # ── Runtime configuration ─────────────────────────────────────────────────────
 WORKDIR /home/user100
 
-# openclaw state dir (channels config, agent workspaces, credentials)
-ENV OPENCLAW_HOME="/home/user100/.openclaw"
+# Pre-create the state dir so the Docker named volume inherits user100 ownership.
+RUN mkdir -p /home/user100/.openclaw
+
+# openclaw resolves state under $HOME/.openclaw — keep HOME set correctly.
+ENV HOME="/home/user100"
 
 # Gateway runs in local mode inside the container
 ENV OPENCLAW_GATEWAY_MODE="local"
