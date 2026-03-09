@@ -107,5 +107,6 @@ EXPOSE 18789
 # Seed gateway.mode=local so the gateway starts without interactive setup,
 # then launch. Using shell form so we can chain commands.
 CMD bun /home/user100/openclaw-custom/openclaw.mjs config set gateway.mode local 2>/dev/null; \
+    bun /home/user100/openclaw-custom/openclaw.mjs config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true 2>/dev/null; \
     exec bun /home/user100/openclaw-custom/openclaw.mjs \
       gateway run --bind lan --port 18789 --allow-unconfigured
