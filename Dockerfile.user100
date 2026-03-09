@@ -30,6 +30,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 libpango-1.0-0 libcairo2 libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Playwright system-level browser deps as root.
+# scrapling install calls `playwright install-deps` which needs apt/root.
+# We pre-install here so the user100 step can run without sudo.
+RUN pip3 install --break-system-packages playwright patchright && \
+    python3 -m playwright install-deps chromium && \
+    python3 -m patchright install-deps chromium || true
+
 # Enable corepack so pnpm is available system-wide
 RUN corepack enable
 
@@ -74,9 +81,11 @@ RUN pip install --upgrade pip && \
         mem0ai \
         "scrapling[fetchers]"
 
-# Download Scrapling browser binaries (Playwright, etc.) into ~/.scrapling
-# Runs as user100 so binaries land in the user home, not /root.
-RUN scrapling install
+# Download Scrapling browser binaries as user100.
+# System deps were installed as root above; this only downloads browser binaries.
+RUN scrapling install --no-deps 2>/dev/null || \
+    (python3 -m playwright install chromium && \
+     python3 -m patchright install chromium)
 
 # ── Runtime configuration ─────────────────────────────────────────────────────
 WORKDIR /home/user100
