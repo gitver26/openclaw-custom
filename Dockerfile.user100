@@ -1,0 +1,97 @@
+# syntax=docker/dockerfile:1.7
+#
+# Dockerfile.user100 — Non-root openclaw-custom agent with mem0 + Scrapling
+#
+# Build:
+#   docker build -f Dockerfile.user100 -t openclaw-user100 .
+#
+# Run:
+#   docker run --env-file .env.user100 -p 18789:18789 openclaw-user100
+#
+# Or use docker-compose:
+#   docker compose -f docker-compose.user100.yml up
+
+ARG NODE_IMAGE="node:22-bookworm"
+
+# ── Base ──────────────────────────────────────────────────────────────────────
+FROM ${NODE_IMAGE}
+
+# System packages:
+#   - python3 + pip: mem0ai and Scrapling are Python libraries
+#   - git: clone openclaw-custom at build time
+#   - playwright/browser runtime deps: needed by Scrapling's DynamicFetcher
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-venv \
+    git curl ca-certificates \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libdrm2 libdbus-1-3 libexpat1 \
+    libxcb1 libxkbcommon0 libx11-6 libxcomposite1 \
+    libxdamage1 libxext6 libxfixes3 libxrandr2 \
+    libgbm1 libpango-1.0-0 libcairo2 libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable corepack so pnpm is available system-wide
+RUN corepack enable
+
+# ── Non-root user ─────────────────────────────────────────────────────────────
+RUN useradd -m -u 1100 -s /bin/bash user100
+
+USER user100
+WORKDIR /home/user100
+
+# ── Bun (required for openclaw build scripts) ─────────────────────────────────
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/home/user100/.bun/bin:${PATH}"
+
+# ── Clone and build openclaw-custom ──────────────────────────────────────────
+ARG OPENCLAW_REPO=https://github.com/gitver26/openclaw-custom.git
+ARG OPENCLAW_REF=main
+
+RUN git clone --depth=1 --branch ${OPENCLAW_REF} ${OPENCLAW_REPO} openclaw-custom
+
+WORKDIR /home/user100/openclaw-custom
+
+# Install JS/TS dependencies (pnpm, locked)
+RUN NODE_OPTIONS=--max-old-space-size=2048 pnpm install --frozen-lockfile
+
+# Build the CLI output (dist/)
+# A2UI bundle may fail under QEMU cross-arch; stub it so build still succeeds.
+RUN pnpm canvas:a2ui:bundle 2>/dev/null || \
+    (mkdir -p src/canvas-host/a2ui && \
+     echo "/* stub */" > src/canvas-host/a2ui/a2ui.bundle.js && \
+     echo "stub" > src/canvas-host/a2ui/.bundle.hash)
+
+RUN pnpm build
+
+# ── Python venv: mem0 + Scrapling ─────────────────────────────────────────────
+# Isolated venv keeps Python deps separate from the system Python.
+RUN python3 -m venv /home/user100/.venv
+ENV PATH="/home/user100/.venv/bin:${PATH}"
+ENV VIRTUAL_ENV="/home/user100/.venv"
+
+RUN pip install --upgrade pip && \
+    pip install \
+        mem0ai \
+        "scrapling[fetchers]"
+
+# Download Scrapling browser binaries (Playwright, etc.) into ~/.scrapling
+# Runs as user100 so binaries land in the user home, not /root.
+RUN scrapling install
+
+# ── Runtime configuration ─────────────────────────────────────────────────────
+WORKDIR /home/user100
+
+# openclaw state dir (channels config, agent workspaces, credentials)
+ENV OPENCLAW_HOME="/home/user100/.openclaw"
+
+# Gateway runs in local mode inside the container
+ENV OPENCLAW_GATEWAY_MODE="local"
+
+# Persist agent state and config across container restarts
+VOLUME ["/home/user100/.openclaw"]
+
+EXPOSE 18789
+
+# Start the openclaw gateway bound to all interfaces so the host can reach it.
+CMD ["bun", "/home/user100/openclaw-custom/openclaw.mjs", \
+     "gateway", "run", "--bind", "all", "--port", "18789"]

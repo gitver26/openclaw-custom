@@ -1,0 +1,44 @@
+name: openclaw-user100
+
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.user100
+      args:
+        OPENCLAW_REPO: https://github.com/gitver26/openclaw-custom.git
+        OPENCLAW_REF: main
+    image: openclaw-user100:latest
+    container_name: openclaw-user100
+    ports:
+      - "18789:18789"
+    volumes:
+      # Persist openclaw config, agent workspaces, and credentials
+      - openclaw-user100-data:/home/user100/.openclaw
+    environment:
+      # ── Z.AI / GLM-4.7 (openclaw agent model) ─────────────────────────────
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - ZAI_BASE_URL=${ZAI_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/}
+      - ZAI_MODEL=${ZAI_MODEL:-glm-4-flash}
+      # openclaw reads OPENAI_API_KEY + OPENAI_BASE_URL for OpenAI-compatible providers
+      - OPENAI_API_KEY=${ZAI_API_KEY}
+      - OPENAI_BASE_URL=${ZAI_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/}
+      # ── OpenAI key scoped to mem0 only ─────────────────────────────────────
+      - MEM0_OPENAI_API_KEY=${MEM0_OPENAI_API_KEY}
+      # ── Anthropic (optional) ───────────────────────────────────────────────
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # ── mem0 managed platform (empty = self-hosted) ────────────────────────
+      - MEM0_API_KEY=${MEM0_API_KEY:-}
+      # ── Gateway ────────────────────────────────────────────────────────────
+      - OPENCLAW_GATEWAY_MODE=local
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  openclaw-user100-data:
+    driver: local
